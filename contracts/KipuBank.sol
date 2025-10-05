@@ -53,7 +53,6 @@ contract KipuBank{
     // ====================================================================
 
     // --- VARIABLES INMUTABLES (IMMUTABLE) ---
-    // Variables que se fijan en el despliegue y nunca cambian, optimizando el gas (no se guardan en Storage).
 
     /**
      * @dev Dirección del dueño del contrato. Se fija en el despliegue.
@@ -219,12 +218,12 @@ contract KipuBank{
     }
 
     // ====================================================================
-    // 7. FALLBACK / RECEIVE (Función de recepción de ETH sin datos)
+    // 7. FALLBACK / RECEIVE 
     // ====================================================================
 
     /**
      * @dev La función 'receive' se ejecuta cuando alguien envía ETH al contrato
-     * sin especificar una función a llamar (como una transferencia simple).
+     * sin especificar una función a llamar.
      * En este caso, simplemente llama a la función 'deposit'.
      * @notice Permite depositar ETH de forma simple sin especificar la función 'deposit'.
      */
