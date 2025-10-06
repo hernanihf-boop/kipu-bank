@@ -81,12 +81,12 @@ contract KipuBank{
     /**
      * @dev Contador de la cantidad total de depósitos exitosos realizados.
      */
-    uint256 public totalDeposits;
+    uint256 private totalDeposits;
 
     /**
      * @dev Contador de la cantidad total de retiros exitosos realizados.
      */
-    uint256 public totalWithdrawals;
+    uint256 private totalWithdrawals;
 
     // ====================================================================
     // 3. EVENTOS
