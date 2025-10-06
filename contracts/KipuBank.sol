@@ -194,6 +194,22 @@ contract KipuBank{
     }
 
     /**
+     * @notice Devuelve la cantidad total de depósitos que se han realizado.
+     * @return El contador total de depósitos.
+     */
+    function getTotalDeposits() public view returns (uint256) {
+        return totalDeposits;
+    }
+
+    /**
+     * @notice Devuelve la cantidad total de retiros que se han realizado.
+     * @return El contador total de retiros.
+     */
+    function getTotalWithdrawals() public view returns (uint256) {
+        return totalWithdrawals;
+    }
+
+    /**
      * @notice Devuelve la capacidad máxima total de ETH que el banco puede contener.
      * @return El bankCap del contrato (en Wei).
      */
