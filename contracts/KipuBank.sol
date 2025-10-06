@@ -81,12 +81,12 @@ contract KipuBank{
     /**
      * @dev Contador de la cantidad total de depósitos exitosos realizados.
      */
-    uint256 private totalDeposits;
+    uint256 public totalDeposits;
 
     /**
      * @dev Contador de la cantidad total de retiros exitosos realizados.
      */
-    uint256 private totalWithdrawals;
+    uint256 public totalWithdrawals;
 
     // ====================================================================
     // 3. EVENTOS
@@ -191,14 +191,6 @@ contract KipuBank{
      */
     function getMyBalance() public view returns (uint256) {
         return balances[msg.sender];
-    }
-
-    /**
-     * @notice Devuelve la cantidad total de depósitos que se han realizado.
-     * @return El contador total de depósitos.
-     */
-    function getTotalDeposits() public view returns (uint256) {
-        return totalDeposits;
     }
 
     /**

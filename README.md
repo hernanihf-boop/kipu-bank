@@ -47,7 +47,7 @@ Método: deposit()
 
 Uso: Hacé una transacción al contrato, asegurándote de adjuntar la cantidad de ETH que querés depositar en el campo Value.
 
-Ejemplo: Para depositar , enviá la transacción a deposit() con Value = .
+Ejemplo: Para depositar , enviá la transacción a deposit() con Value = 0.2 ETH.
 
 2. Retirando Fondos (withdraw)
 
