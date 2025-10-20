@@ -185,7 +185,7 @@ contract KipuBank {
             revert ZeroDeposit();
         }
 
-        if (address(this).balance + amount > BANK_CAP) {
+        if (address(this).balance > BANK_CAP) {
             revert BankCapExceeded();
         }
 
