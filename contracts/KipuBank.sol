@@ -7,9 +7,69 @@ pragma solidity >=0.7.0 <0.9.0;
  * @notice Contrato inteligente que permite a los usuarios depositar ETH
  * en una bóveda personal y retirarlos con un límite por transacción.
  */
-contract KipuBank{
+contract KipuBank {
     // ====================================================================
-    // 1. ERRORES PERSONALIZADOS (CUSTOM ERRORS)
+    // VARIABLES INMUTABLES, DE ESTADO Y ALMACENAMIENTO (STORAGE)
+    // ====================================================================
+
+    // --- VARIABLES INMUTABLES (IMMUTABLE) ---
+
+    /**
+     * @dev Dirección del dueño del contrato. Se fija en el despliegue.
+     */
+    address public immutable owner;
+
+    /**
+     * @dev Límite máximo de ETH que se puede retirar en una sola transacción.
+     */
+    uint256 public immutable MAX_WITHDRAWAL = 0.5 ether;
+
+    /**
+     * @dev Capacidad total de ETH que el banco puede contener (en Wei).
+     * @dev Fijo en el despliegue para asegurar la capacidad.
+     */
+    uint256 private immutable bankCap;
+
+    // --- VARIABLES DE ESTADO (STORAGE) ---
+
+    /**
+     * @dev Mapeo que guarda el saldo personal de ETH de cada usuario (en Wei).
+     * @dev La clave es la dirección del usuario.
+     */
+    mapping(address => uint256) private balances;
+
+    /**
+     * @dev Contador de la cantidad total de depósitos exitosos realizados.
+     */
+    uint256 private totalDeposits;
+
+    /**
+     * @dev Contador de la cantidad total de retiros exitosos realizados.
+     */
+    uint256 private totalWithdrawals;
+
+    // ====================================================================
+    // EVENTOS
+    // ====================================================================
+
+    /**
+     * @dev Emitido cuando un usuario deposita ETH exitosamente.
+     * @param user Dirección que depositó.
+     * @param amount Cantidad depositada (en Wei).
+     * @param newBalance Nuevo saldo del usuario.
+     */
+    event DepositSuccessful(address indexed user, uint256 amount, uint256 newBalance);
+
+    /**
+     * @dev Emitido cuando un usuario retira ETH exitosamente.
+     * @param user Dirección que retiró.
+     * @param amount Cantidad retirada (en Wei).
+     * @param newBalance Nuevo saldo del usuario.
+     */
+    event WithdrawalSuccessful(address indexed user, uint256 amount, uint256 newBalance);
+
+    // ====================================================================
+    // ERRORES PERSONALIZADOS (CUSTOM ERRORS)
     // ====================================================================
 
     /**
@@ -49,69 +109,16 @@ contract KipuBank{
     error UnauthorizedCaller(address caller, address owner);
 
     // ====================================================================
-    // 2. VARIABLES DE ESTADO Y ALMACENAMIENTO (STORAGE)
-    // ====================================================================
-
-    // --- VARIABLES INMUTABLES (IMMUTABLE) ---
-
-    /**
-     * @dev Dirección del dueño del contrato. Se fija en el despliegue.
-     */
-    address public immutable owner;
-
-    /**
-     * @dev Límite máximo de ETH que se puede retirar en una sola transacción.
-     */
-    uint256 public immutable MAX_WITHDRAWAL = 0.5 ether;
-
-    // --- VARIABLES DE ESTADO (STORAGE) ---
-
-    /**
-     * @dev Mapeo que guarda el saldo personal de ETH de cada usuario (en Wei).
-     * @dev La clave es la dirección del usuario.
-     */
-    mapping(address => uint256) private balances;
-
-    /**
-     * @dev Capacidad total de ETH que el banco puede contener (en Wei).
-     * @dev Fijo en el despliegue para asegurar la capacidad.
-     */
-    uint256 private bankCap;
-
-    /**
-     * @dev Contador de la cantidad total de depósitos exitosos realizados.
-     */
-    uint256 private totalDeposits;
-
-    /**
-     * @dev Contador de la cantidad total de retiros exitosos realizados.
-     */
-    uint256 private totalWithdrawals;
-
-    // ====================================================================
-    // 3. EVENTOS
+    // CONSTRUCTOR Y MODIFICADORES
     // ====================================================================
 
     /**
-     * @dev Emitido cuando un usuario deposita ETH exitosamente.
-     * @param user Dirección que depositó.
-     * @param amount Cantidad depositada (en Wei).
-     * @param newBalance Nuevo saldo del usuario.
+     * @dev Modificador para validar que solo el dueño pueda llamar a la función.
      */
-    event DepositSuccessful(address indexed user, uint256 amount, uint256 newBalance);
-
-    /**
-     * @dev Emitido cuando un usuario retira ETH exitosamente.
-     * @param user Dirección que retiró.
-     * @param amount Cantidad retirada (en Wei).
-     * @param newBalance Nuevo saldo del usuario.
-     */
-    event WithdrawalSuccessful(address indexed user, uint256 amount, uint256 newBalance);
-
-
-    // ====================================================================
-    // 4. CONSTRUCTOR Y MODIFICADORES
-    // ====================================================================
+    modifier onlyOwner() {
+      if (msg.sender != owner) revert UnauthorizedCaller(msg.sender, owner);
+      _;
+   }
 
     /**
      * @dev Constructor que inicializa el contrato.
@@ -123,37 +130,23 @@ contract KipuBank{
         bankCap = _bankCap * 1 ether; // Convierte el input (en ETH) a Wei
     }
 
-    /**
-     * @dev Modificador para validar que solo el dueño pueda llamar a la función.
-     */
-    modifier onlyOwner() {
-      if (msg.sender != owner) revert UnauthorizedCaller(msg.sender, owner);
-      _;
-   }
-
-     // ====================================================================
-    // 5. FUNCIONES PÚBLICAS Y EXTERNAS (INTERACCIONES)
+    // ====================================================================
+    // FALLBACK / RECEIVE 
     // ====================================================================
 
     /**
-     * @notice Permite a cualquier usuario depositar ETH en su bóveda personal.
+     * @dev La función 'receive' se ejecuta cuando alguien envía ETH al contrato
+     * sin especificar una función a llamar.
+     * En este caso, simplemente llama a la función 'deposit'.
+     * @notice Permite depositar ETH de forma simple sin especificar la función 'deposit'.
      */
-    function deposit() public payable {
-        uint256 amount = msg.value;
-        address user = msg.sender;
-
-        if (amount == 0) {
-            revert ZeroDeposit();
-        }
-
-        if (address(this).balance > bankCap) {
-            revert BankCapExceeded();
-        }
-
-        balances[user] += amount;
-        totalDeposits++;
-        emit DepositSuccessful(user, amount, balances[user]);
+    receive() external payable {
+        deposit();
     }
+
+    // ====================================================================
+    // FUNCIONES PÚBLICAS Y EXTERNAS (INTERACCIONES)
+    // ====================================================================
 
     /**
      * @notice Permite al usuario retirar ETH de su bóveda personal.
@@ -180,9 +173,28 @@ contract KipuBank{
         emit WithdrawalSuccessful(user, _amount, balances[user]);
     }
 
+    /**
+     * @notice Permite a cualquier usuario depositar ETH en su bóveda personal.
+     */
+    function deposit() public payable {
+        uint256 amount = msg.value;
+        address user = msg.sender;
+
+        if (amount == 0) {
+            revert ZeroDeposit();
+        }
+
+        if (address(this).balance > bankCap) {
+            revert BankCapExceeded();
+        }
+
+        balances[user] += amount;
+        totalDeposits++;
+        emit DepositSuccessful(user, amount, balances[user]);
+    }
 
     // ====================================================================
-    // 6. FUNCIONES DE VISTA (VIEW) Y PRIVADAS
+    // FUNCIONES DE VISTA (VIEW) Y PRIVADAS
     // ====================================================================
 
     /**
@@ -223,19 +235,5 @@ contract KipuBank{
      */
     function _getUserBalance(address _user) private view returns (uint256) {
         return balances[_user];
-    }
-
-    // ====================================================================
-    // 7. FALLBACK / RECEIVE 
-    // ====================================================================
-
-    /**
-     * @dev La función 'receive' se ejecuta cuando alguien envía ETH al contrato
-     * sin especificar una función a llamar.
-     * En este caso, simplemente llama a la función 'deposit'.
-     * @notice Permite depositar ETH de forma simple sin especificar la función 'deposit'.
-     */
-    receive() external payable {
-        deposit();
     }
 }
