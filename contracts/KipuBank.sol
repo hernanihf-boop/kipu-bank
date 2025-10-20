@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: MIT
-pragma solidity >=0.7.0 <0.9.0;
+pragma solidity >=0.8.4 <0.9.0;
 
 /**
  * @title KipuBank
@@ -26,7 +26,7 @@ contract KipuBank {
      * @dev Total capacity of ETH that bank can hold (in Wei).
      * @dev Fixed in deployment to ensure capacity.
      */
-    uint256 private immutable bankCap;
+    uint256 private immutable BANK_CAP;
 
     /**
      * @dev Mapping that saves each user's personal ETH balance (in Wei).
@@ -74,7 +74,7 @@ contract KipuBank {
     error ZeroDeposit();
 
     /**
-     * @dev Issued when the deposit exceeds the bank's total limit (bankCap).
+     * @dev Issued when the deposit exceeds the bank's total limit (BANK_CAP).
      */
     error BankCapExceeded();
 
@@ -123,7 +123,7 @@ contract KipuBank {
     */
     constructor(uint256 _bankCap) {
         owner = msg.sender;
-        bankCap = _bankCap * 1 ether; // Converts the input (in ETH) to Wei
+        BANK_CAP = _bankCap * 1 ether; // Converts the input (in ETH) to Wei
     }
 
     // ====================================================================
@@ -158,12 +158,13 @@ contract KipuBank {
             revert WithdrawalLimitExceeded(MAX_WITHDRAWAL, _amount);
         }
 
-        balances[user] -= _amount;
+        unchecked {
+            balances[user] -= _amount;
+        }
         totalWithdrawals++;
-
+        
         (bool success, ) = payable(user).call{value: _amount}("");
         if (!success) {
-            balances[user] += _amount;
             revert TransferFailed();
         }
         emit WithdrawalSuccessful(user, _amount, balances[user]);
@@ -180,7 +181,7 @@ contract KipuBank {
             revert ZeroDeposit();
         }
 
-        if (address(this).balance > bankCap) {
+        if (address(this).balance + amount > BANK_CAP) {
             revert BankCapExceeded();
         }
 
@@ -194,7 +195,7 @@ contract KipuBank {
     * @return The user's balance.
     */
     function getMyBalance() public view returns (uint256) {
-        return balances[msg.sender];
+        return _getUserBalance(msg.sender);
     }
 
     /**
@@ -215,10 +216,10 @@ contract KipuBank {
 
     /**
     * @notice Returns the maximum total ETH capacity the bank can hold.
-    * @return The contract's bankCap (in Wei).
+    * @return The contract's bank capacity (in Wei).
     */
     function getBankCap() public view returns (uint256) {
-        return bankCap;
+        return BANK_CAP;
     }
 
     /**
