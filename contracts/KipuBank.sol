@@ -105,7 +105,7 @@ contract KipuBank {
     error UnauthorizedCaller(address caller, address owner);
 
     // ====================================================================
-    // MODIFIERS & CONSTRUCTORS
+    // MODIFIERS
     // ====================================================================
 
     /**
@@ -115,6 +115,10 @@ contract KipuBank {
       if (msg.sender != owner) revert UnauthorizedCaller(msg.sender, owner);
       _;
    }
+
+    // ====================================================================
+    // CONSTRUCTOR
+    // ====================================================================
 
     /**
     * @dev Constructor that initializes the contract.
